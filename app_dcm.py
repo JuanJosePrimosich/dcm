@@ -5,60 +5,52 @@ import os
 import uuid
 from datetime import datetime
 
-# Polyfill para st.experimental_rerun si no existe (versiones antiguas)
-if not hasattr(st, "experimental_rerun"):
-    def experimental_rerun():
-        st.session_state["_rerun"] = True
-        st.stop()
-    st.experimental_rerun = experimental_rerun
-
+# Cargar variables desde .env
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Configuración de página
 st.set_page_config(page_title="Test de Elección Discreta", layout="centered")
 
-# Manejo simple para rerun
-if "_rerun" in st.session_state:
-    del st.session_state["_rerun"]
-    # Si querés, podés poner algo para refrescar (no estrictamente necesario)
-
-st.markdown("## Bienvenido al estudio de preferencias")
-st.info("**Este estudio es anónimo y solo toma unos minutos. Los datos se usarán con fines académicos.**")
-
-# Consentimiento informado
-if "consentimiento" not in st.session_state:
-    st.session_state.consentimiento = False
-
-if not st.session_state.consentimiento:
-    if st.button("Acepto participar en el estudio"):
-        st.session_state.consentimiento = True
-        st.experimental_rerun()
-    st.stop()
-
-st.markdown("### Preguntas iniciales")
-edad = st.number_input("Edad", min_value=15, max_value=99, step=1)
-sexo = st.selectbox("Sexo", ["Femenino", "Masculino", "Otro", "Prefiero no decirlo"])
-nivel = st.selectbox("Nivel educativo", ["Secundario", "Terciario", "Universitario", "Posgrado"])
-
-if st.button("Comenzar encuesta"):
-    st.session_state.user_id = str(uuid.uuid4())
-    st.session_state.preguntas_previas = {
-        "edad": edad,
-        "sexo": sexo,
-        "nivel": nivel
-    }
+# Control del flujo
+if "pantalla" not in st.session_state:
+    st.session_state.pantalla = "consentimiento"
+if "bloque" not in st.session_state:
     st.session_state.bloque = 1
-    st.experimental_rerun()
 
-if "user_id" in st.session_state and "bloque" in st.session_state:
+# Pantalla 1: Consentimiento
+if st.session_state.pantalla == "consentimiento":
+    st.title("Test de Preferencias")
+    st.info("Esta encuesta es anónima. Los datos se usan con fines académicos.")
+    if st.button("Acepto participar"):
+        st.session_state.pantalla = "datos"
+        st.session_state.user_id = str(uuid.uuid4())
+        st.experimental_rerun = None  # Eliminamos para evitar errores futuros
+        st.experimental_set_query_params()
+        st._shown = False  # fuerza a Streamlit a mostrar la próxima pantalla
 
+# Pantalla 2: Datos previos
+elif st.session_state.pantalla == "datos":
+    st.subheader("Datos sociodemográficos")
+    edad = st.number_input("Edad", 15, 99)
+    sexo = st.selectbox("Sexo", ["Femenino", "Masculino", "Otro", "Prefiero no decirlo"])
+    nivel = st.selectbox("Nivel educativo", ["Secundario", "Terciario", "Universitario", "Posgrado"])
+    if st.button("Iniciar encuesta"):
+        st.session_state.datos = {
+            "edad": edad,
+            "sexo": sexo,
+            "nivel": nivel
+        }
+        st.session_state.pantalla = "encuesta"
+
+# Pantalla 3: Encuesta por bloques
+elif st.session_state.pantalla == "encuesta":
     total_bloques = 4
-
-    st.markdown(f"## Bloque {st.session_state.bloque} de {total_bloques}")
-    st.write("Elegí una alternativa:")
+    bloque = st.session_state.bloque
+    st.markdown(f"### Bloque {bloque} de {total_bloques}")
 
     alt1 = {"consumo": "5 L/100km", "diseño": "Moderno"}
     alt2 = {"consumo": "8 L/100km", "diseño": "Clásico"}
@@ -73,26 +65,28 @@ if "user_id" in st.session_state and "bloque" in st.session_state:
         st.write(f"Consumo: {alt2['consumo']}")
         st.write(f"Diseño: {alt2['diseño']}")
 
-    eleccion = st.radio("¿Cuál preferís?", ["Alternativa A", "Alternativa B"])
+    eleccion = st.radio("¿Cuál preferís?", ["Alternativa A", "Alternativa B"], key=f"radio_{bloque}")
 
     if st.button("Guardar y continuar"):
         supabase.table("respuestas").insert({
             "user_id": st.session_state.user_id,
-            "bloque": st.session_state.bloque,
+            "bloque": bloque,
             "alternativa_elegida": eleccion,
             "consumo_alt1": alt1["consumo"],
             "diseño_alt1": alt1["diseño"],
             "consumo_alt2": alt2["consumo"],
             "diseño_alt2": alt2["diseño"],
             "timestamp": datetime.now().isoformat(),
-            "edad": st.session_state.preguntas_previas["edad"],
-            "sexo": st.session_state.preguntas_previas["sexo"],
-            "nivel": st.session_state.preguntas_previas["nivel"]
+            "edad": st.session_state.datos["edad"],
+            "sexo": st.session_state.datos["sexo"],
+            "nivel": st.session_state.datos["nivel"]
         }).execute()
 
-        if st.session_state.bloque < total_bloques:
+        if bloque < total_bloques:
             st.session_state.bloque += 1
-            st.experimental_rerun()
         else:
-            st.success("¡Gracias por participar!")
-            st.stop()
+            st.session_state.pantalla = "fin"
+
+# Pantalla final
+elif st.session_state.pantalla == "fin":
+    st.success("¡Gracias por participar en la encuesta!")
