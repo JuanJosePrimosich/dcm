@@ -29,7 +29,7 @@ if st.session_state.pantalla == "consentimiento":
         st.session_state.pantalla = "datos"
         st.session_state.user_id = str(uuid.uuid4())
         st.experimental_rerun = None  # Eliminamos para evitar errores futuros
-        st.experimental_set_query_params()
+        st.query_params.clear()
         st._shown = False  # fuerza a Streamlit a mostrar la próxima pantalla
 
 # Pantalla 2: Datos previos
