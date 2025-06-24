@@ -26,11 +26,11 @@ if st.session_state.pantalla == "consentimiento":
     st.title("Test de Preferencias")
     st.info("Esta encuesta es anónima. Los datos se usan con fines académicos.")
     if st.button("Acepto participar"):
-        st.session_state.pantalla = "datos"
-        st.session_state.user_id = str(uuid.uuid4())
-        st.experimental_rerun = None  # Eliminamos para evitar errores futuros
-        st.query_params.clear()
-        st._shown = False  # fuerza a Streamlit a mostrar la próxima pantalla
+    st.session_state.pantalla = "datos"
+    st.session_state.user_id = str(uuid.uuid4())
+    st.experimental_rerun = None  # Eliminamos para evitar errores futuros
+    st.query_params.clear()       # Reemplazo moderno
+    st._shown = False             # fuerza a Streamlit a mostrar la próxima pantalla
 
 # Pantalla 2: Datos previos
 elif st.session_state.pantalla == "datos":
