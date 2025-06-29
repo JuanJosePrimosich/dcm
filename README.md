@@ -11,25 +11,8 @@ Esta aplicación en Streamlit permite realizar encuestas de tipo *Discrete Choic
 - ✅ Compatible con celulares y tablets
 - ✅ Listo para desplegar en Streamlit Cloud
 
----
 
-## 🖼️ Capturas (opcional)
 
-_Agregá capturas de pantalla si querés mostrar cómo se ve la app._
 
----
 
-## ⚙️ Requisitos
 
-- Python 3.9 o superior
-- Cuenta gratuita en [Supabase](https://supabase.com)
-- Cuenta gratuita en [Streamlit Cloud](https://streamlit.io/cloud)
-
----
-
-## 🧑‍💻 Instalación local
-
-```bash
-git clone https://github.com/JuanJosePrimosich/dcm-encuesta.git
-cd dcm-encuesta
-pip install -r requirements.txt
